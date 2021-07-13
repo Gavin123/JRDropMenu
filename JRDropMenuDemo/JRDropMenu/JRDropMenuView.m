@@ -20,7 +20,7 @@ static float titleHeight;
 @property (nonatomic , assign) NSInteger curIndex;
 @property (nonatomic , strong) NSMutableArray * columnContentArr;//每列数据
 @property (nonatomic , strong) NSMutableArray<JRDropMenuItemModel *> * resultArr;//结果数组
-
+@property(nonatomic, strong) UIScrollView *scrollView;
 @end
 
 
@@ -53,7 +53,7 @@ static float titleHeight;
         JRTitle * title = category.title;
         JRList * list = category.list;
         
-        JRDropTitleItemView * itemView = [[JRDropTitleItemView alloc] initWithFrame:CGRectMake(0, 0, titleWidth, titleHeight)];
+        JRDropTitleItemView * itemView = [[JRDropTitleItemView alloc] init];
         itemView.title = title;
         if (title.defaultIndex != 0) {//默认选中
             [itemView setText:list.listArr[title.defaultIndex]];
@@ -90,9 +90,14 @@ static float titleHeight;
        [self.columnContentArr addObject:contentArr];
     }
     
-    [self setupTitleStackView];//配置标题stackView
+    
+    
+    [self setupScrollView];//配置标题stackView
     
 }
+
+
+
 - (void)setupTitleStackView
 {
     if (self.stackView.superview) {
@@ -118,6 +123,128 @@ static float titleHeight;
         [self addSubview:self.bottomSeparatLine];
     }
 }
+
+
+
+- (void)setupScrollView {
+    
+    if (self.scrollView.superview) {
+        [self.superview  removeFromSuperview];
+    }
+    
+    self.scrollView = [[UIScrollView alloc] init];
+    self.scrollView.backgroundColor = [UIColor clearColor];
+    self.scrollView.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height - 2);
+    self.scrollView.showsVerticalScrollIndicator = NO;
+    self.scrollView.showsHorizontalScrollIndicator = NO;
+    
+    [self addSubview:self.scrollView];
+    
+        
+    for (int i = 0; i < self.subViews.count; i ++) {
+        
+        UIView *temp = [self.subViews objectAtIndex:i];
+        
+        [self.scrollView addSubview:temp];
+    }
+    
+    
+    [self reloadItemSize];
+    
+    
+    
+    if (self.jrOption.showIndicator) {
+        if (self.bottomIndicator.superview) {
+            [self.bottomIndicator removeFromSuperview];
+        }
+        [self.scrollView addSubview:self.bottomIndicator];
+    }
+    if (self.jrOption.showBottomLine) {
+        if (self.bottomSeparatLine.superview) {
+            [self.bottomSeparatLine removeFromSuperview];
+        }
+        [self addSubview:self.bottomSeparatLine];
+    }
+}
+
+
+
+- (void)reloadItemSize {
+    
+    UIView *lastView = nil;
+    
+    
+    CGFloat maxWidth = 0;
+    
+    for (int i = 0; i < self.subViews.count; i ++) {
+        
+        UIView *temp = [self.subViews objectAtIndex:i];
+        
+    
+        
+        CGSize size = [temp intrinsicContentSize];
+        
+        maxWidth += size.width;
+    }
+    
+    
+    
+    if (maxWidth > self.scrollView.frame.size.width) {
+        
+        for (int i = 0; i < self.subViews.count; i ++) {
+            
+            UIView *temp = [self.subViews objectAtIndex:i];
+            
+        
+            
+            CGSize size = [temp intrinsicContentSize];
+            
+            
+            CGFloat y = 0 ;
+            CGFloat x = lastView ? CGRectGetMaxX(lastView.frame) : 0;
+            
+            temp.frame = CGRectMake(x, y, size.width, self.scrollView.frame.size.height);
+            
+            
+          
+            lastView = temp;
+            
+        }
+        self.scrollView.contentSize = CGSizeMake(CGRectGetMaxX(lastView.frame), CGRectGetHeight(lastView.frame) - 5);
+        
+     
+    }else {
+        //平分
+        CGFloat kWidth = self.frame.size.width / self.subViews.count;
+        
+        for (int i = 0; i < self.subViews.count; i ++) {
+            
+            UIView *temp = [self.subViews objectAtIndex:i];
+            
+            
+            CGFloat y = 0 ;
+            CGFloat x = i * kWidth;
+            
+            temp.frame = CGRectMake(x, y, kWidth, self.scrollView.frame.size.height);
+            
+        }
+
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
 - (void)setupTableView
 {
     if (self.maskBgView.superview == nil) {
@@ -127,18 +254,30 @@ static float titleHeight;
         [[UIApplication sharedApplication].keyWindow addSubview:self.listTable];
     }
 }
-- (void)show
+- (void)show:(JRDropTitleItemView *)itemView
 {
     [self setupTableView];//配置tableview
     
     if (self.bottomIndicator.isHidden) {
         self.bottomIndicator.hidden = NO;
-        self.bottomIndicator.frame = CGRectMake(_curIndex * titleWidth + 10, titleHeight - 1 - self.jrOption.indicatorHeight, titleWidth - 20, self.jrOption.indicatorHeight);
+        
+        
+        CGPoint center = self.bottomIndicator.center;
+        center.x = itemView.center.x;
+        center.y = itemView.center.y + 18;
+
+        
+        
+        self.bottomIndicator.center = center;
+        
     }
     self.maskBgView.hidden = NO;
     [UIView animateWithDuration:.25 animations:^{
-        self.bottomIndicator.frame = CGRectMake(self.curIndex * titleWidth + 10, titleHeight - 1 - self.jrOption.indicatorHeight, titleWidth - 20, self.jrOption.indicatorHeight);
-        
+
+        CGPoint center = self.bottomIndicator.center;
+        center.x = itemView.center.x;
+        center.y = itemView.center.y + 18;
+        self.bottomIndicator.center = center;
         JRCategory * category = self.jrOption.categoryArr[self.curIndex];
         self.listTable.frame = CGRectMake(self.frame.origin.x, CGRectGetMaxY(self.frame), self.frame.size.width, category.list.listRowHeight * self.itemsArr.count);
         self.maskBgView.alpha = 1;
@@ -149,11 +288,11 @@ static float titleHeight;
 }
 - (void)dismissWithAnimation:(BOOL)animation
 {
-    if (_curIndex != -1) {
-        JRDropTitleItemView * lastView = self.subViews[_curIndex];
-        lastView.isSelected = NO;
-    }
-    
+//    if (_curIndex != -1) {
+//        JRDropTitleItemView * lastView = self.subViews[_curIndex];
+//        lastView.isSelected = NO;
+//    }
+//
     _curIndex = -1;
     self.bottomIndicator.hidden = YES;
     
@@ -203,18 +342,27 @@ static float titleHeight;
     JRDropMenuItemModel * lastModel = self.resultArr[_curIndex];
     if (lastModel.index == indexPath.row) {//点击的为之前选中的item
         [self dismissWithAnimation:YES];
+        
+        //如果是选中的
+        
+        
         return;
     }
     
+    //更新当前选择
     JRDropMenuItemModel * model = self.itemsArr[indexPath.row];
     model.isSelected = YES;
     
+    //更新之前的选择
     JRDropMenuItemModel * lastListModel = self.itemsArr[lastModel.index];
     lastListModel.isSelected = NO;
     
     self.resultArr[_curIndex] = model;//记录结果
     
+    
     JRDropTitleItemView * titleView = self.subViews[_curIndex];
+    titleView.isSelected = YES;
+    
     NSString * titleStr;
     if (model.shouldShowOriginTitle) {
         JRCategory * category = self.jrOption.categoryArr[self.curIndex];
@@ -223,6 +371,10 @@ static float titleHeight;
         titleStr = model.title;
     }
     [titleView setText:titleStr];
+    
+    
+    
+    [self reloadItemSize];
     
     [self.listTable reloadData];
     
@@ -233,12 +385,11 @@ static float titleHeight;
     }
 }
 #pragma mark - JRDropTitleItemViewDelegate
-- (void)didClickTitleInJRDropTitleItemView:(JRDropTitleItemView *)itemView
-{
-    if (_curIndex != -1) {
-        JRDropTitleItemView * lastView = self.subViews[_curIndex];
-        lastView.isSelected = NO;
-    }
+- (void)didClickTitleInJRDropTitleItemView:(JRDropTitleItemView *)itemView {
+//    if (_curIndex != -1) {
+//        JRDropTitleItemView * lastView = self.subViews[_curIndex];
+//        lastView.isSelected = NO;
+//    }
     
     NSInteger curIndex = [self.subViews indexOfObject:itemView];
     
@@ -249,13 +400,21 @@ static float titleHeight;
         _curIndex = curIndex;
     }
     
+ 
+    
+    
     [self.itemsArr removeAllObjects];
     self.itemsArr = [NSMutableArray arrayWithArray:self.columnContentArr[_curIndex]];
     
     [self.listTable reloadData];
     
-    [self show];
+    [self show:itemView];
 }
+
+
+
+
+
 -(NSMutableArray *)subViews
 {
     if (!_subViews) {

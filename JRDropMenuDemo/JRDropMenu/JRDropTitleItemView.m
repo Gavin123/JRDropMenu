@@ -10,6 +10,27 @@
 
 @implementation JRDropTitleItemView
 
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _isSelected = NO;
+        [self setupUI];
+    }
+    return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    self = [super initWithCoder:coder];
+    if (self) {
+        _isSelected = NO;
+        [self setupUI];
+    }
+    return self;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -33,24 +54,7 @@
     }else{
         _titleLabel.text = [NSString stringWithFormat:@"%@%@",self.title.preTitleStr,text];
     }
-    [_titleLabel sizeToFit];
-    switch (_title.titleAlignment) {
-        case TitleAlignmentCenter:
-            _titleLabel.center = CGPointMake(CGRectGetMidX(self.frame) - self.frame.origin.x, CGRectGetMidY(self.frame));
-            break;
-        case TitleAlignmentLeft:
-            _titleLabel.center = CGPointMake(_title.titleGap + _titleLabel.frame.size.width/2, CGRectGetMidY(self.frame));
-            break;
-        case TitleAlignmentRight:
-            _titleLabel.center = CGPointMake(CGRectGetMaxX(self.frame) - _titleLabel.frame.size.width/2 - _title.titleGap - 13, CGRectGetMidY(self.frame));
-            break;
-            
-        default:
-            break;
-    }
-    
-    
-    _arrowImg.frame = CGRectMake(CGRectGetMaxX(_titleLabel.frame) + 5, CGRectGetMidY(self.frame) - 3, 8, 6);
+  
     [self layoutIfNeeded];
 }
 -(void)setTitle:(JRTitle *)title
@@ -79,7 +83,7 @@
 -(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     if (_delegate && [_delegate respondsToSelector:@selector(didClickTitleInJRDropTitleItemView:)]) {
-        self.isSelected = !self.isSelected;
+       // self.isSelected = !self.isSelected;
         [_delegate didClickTitleInJRDropTitleItemView:self];
     }
 }
@@ -101,12 +105,42 @@
     }
     return _arrowImg;
 }
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect {
-    // Drawing code
+
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    [_titleLabel sizeToFit];
+    switch (_title.titleAlignment) {
+        case TitleAlignmentCenter:
+            _titleLabel.center = CGPointMake(CGRectGetMidX(self.frame) - self.frame.origin.x, CGRectGetMidY(self.frame));
+            break;
+        case TitleAlignmentLeft:
+            _titleLabel.center = CGPointMake(_title.titleGap + _titleLabel.frame.size.width/2, CGRectGetMidY(self.frame));
+            break;
+        case TitleAlignmentRight:
+            _titleLabel.center = CGPointMake(CGRectGetMaxX(self.frame) - _titleLabel.frame.size.width/2 - _title.titleGap - 13, CGRectGetMidY(self.frame));
+            break;
+            
+        default:
+            break;
+    }
+    
+    
+    _arrowImg.frame = CGRectMake(CGRectGetMaxX(_titleLabel.frame) + 5, CGRectGetMidY(self.frame) - 3, 8, 6);
 }
-*/
+
+
+- (CGSize)intrinsicContentSize {
+    
+    //计算label需要的长度
+    [self.titleLabel sizeToFit];
+    
+    CGFloat width = self.titleLabel.frame.size.width + 30 + 10;
+    
+
+    return  CGSizeMake(width, 0);
+    
+}
 
 @end
+
